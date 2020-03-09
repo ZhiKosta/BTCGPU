@@ -325,9 +325,17 @@ static UniValue prioritisetransaction(const JSONRPCRequest& request)
 // NOTE: Assumes a conclusive result; if result is inconclusive, it must be handled by caller
 static UniValue BIP22ValidationResult(const CValidationState& state)
 {
-    if (state.IsValid())
+    if (state.IsValid()) {
         return NullUniValue;
+// CCBN:: signal on new local valid block
+            std::string strCmd = gArgs.GetArg("-blocknotify", "");
+            if (!strCmd.empty()) {
+            boost::replace_all(strCmd, "%s", pBlockIndex->GetBlockHash().GetHex());
+            std::thread t(runCommand, strCmd);
+            t.detach(); // thread runs free
+            }   
 
+    }
     if (state.IsError())
         throw JSONRPCError(RPC_VERIFY_ERROR, FormatStateMessage(state));
     if (state.IsInvalid())
